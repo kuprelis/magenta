@@ -46,11 +46,10 @@ def SpikeFunction(v_scaled, dampening_factor):
     return tf.identity(z_, name="SpikeFunction"), grad
 
 
-ALIFCellStateTuple = namedtuple('ALIFCellStateTuple',
-                                ('s', 'z', 'z_local', 'r'))
+LSNNStateTuple = namedtuple('LSNNStateTuple', ('s', 'z', 'z_local', 'r'))
 
 
-class ALIFCell(rnn.BasicRNNCell):
+class LSNN(rnn.BasicRNNCell):
 
     def __init__(self,
                  n_in,
@@ -132,10 +131,10 @@ class ALIFCell(rnn.BasicRNNCell):
 
     @property
     def state_size(self):
-        return ALIFCellStateTuple(s=tf.TensorShape((self.n_rec, 2)),
-                                  z=self.n_rec,
-                                  r=self.n_rec,
-                                  z_local=self.n_rec)
+        return LSNNStateTuple(s=tf.TensorShape((self.n_rec, 2)),
+                              z=self.n_rec,
+                              r=self.n_rec,
+                              z_local=self.n_rec)
 
     @property
     def output_size(self):
@@ -150,7 +149,7 @@ class ALIFCell(rnn.BasicRNNCell):
         z_local0 = tf.zeros(shape=(batch_size, n_rec), dtype=dtype)
         r0 = tf.zeros(shape=(batch_size, n_rec), dtype=dtype)
 
-        return ALIFCellStateTuple(s=s0, z=z0, r=r0, z_local=z_local0)
+        return LSNNStateTuple(s=s0, z=z0, r=r0, z_local=z_local0)
 
     def compute_z(self, v, b):
         adaptive_thr = self.thr + b * self.beta
@@ -208,10 +207,10 @@ class ALIFCell(rnn.BasicRNNCell):
             tf.clip_by_value(new_r, 0., float(self.n_refractory)))
         new_s = tf.stack((new_v, new_b), axis=-1)
 
-        new_state = ALIFCellStateTuple(s=new_s,
-                                       z=new_z,
-                                       r=new_r,
-                                       z_local=new_z_local)
+        new_state = LSNNStateTuple(s=new_s,
+                                   z=new_z,
+                                   r=new_r,
+                                   z_local=new_z_local)
         return [new_z, new_s], new_state
 
     def compute_eligibility_traces(self, v_scaled, z_pre, z_post, is_rec):
